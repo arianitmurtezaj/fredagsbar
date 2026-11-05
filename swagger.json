@@ -1,0 +1,253 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Fredagsbarens API",
+    "description": "API til events, tilmelding og afmelding. Data gemmes i hukommelsen og nulstilles ved genstart.",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5002",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/events": {
+      "get": {
+        "summary": "Hent alle events",
+        "responses": {
+          "200": {
+            "description": "En liste med alle events",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Event"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Opret et event",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/NewEvent"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Eventet er oprettet",
+            "schema": {
+              "$ref": "#/definitions/Event"
+            }
+          },
+          "400": {
+            "description": "Ugyldigt JSON-objekt, manglende felter eller capacity er ikke et positivt heltal",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/events/{event_id}": {
+      "parameters": [
+        {
+          "name": "event_id",
+          "in": "path",
+          "required": true,
+          "type": "integer"
+        }
+      ],
+      "get": {
+        "summary": "Hent et bestemt event",
+        "responses": {
+          "200": {
+            "description": "Eventet blev fundet",
+            "schema": {
+              "$ref": "#/definitions/Event"
+            }
+          },
+          "404": {
+            "description": "Eventet findes ikke",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Slet et event",
+        "responses": {
+          "204": {
+            "description": "Eventet er slettet. Svaret har ingen body."
+          },
+          "404": {
+            "description": "Eventet findes ikke",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/events/{event_id}/signups": {
+      "post": {
+        "summary": "Tilmeld en person til et event",
+        "description": "Mellemrum omkring navnet fjernes. Navne sammenlignes med forskel på store og små bogstaver.",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Signup"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Personen er tilmeldt. Returnerer det opdaterede event.",
+            "schema": {
+              "$ref": "#/definitions/Event"
+            }
+          },
+          "400": {
+            "description": "Ugyldigt JSON-objekt eller manglende, tomt eller ugyldigt navn",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "404": {
+            "description": "Eventet findes ikke",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "409": {
+            "description": "Personen er allerede tilmeldt, eller eventet er fuldt",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+    "/events/{event_id}/signups/{name}": {
+      "delete": {
+        "summary": "Afmeld en person fra et event",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Navnet som det står i deltagerlisten"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Personen er afmeldt. Svaret har ingen body."
+          },
+          "404": {
+            "description": "Eventet eller tilmeldingen findes ikke",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Event": {
+      "type": "object",
+      "required": ["id", "title", "date", "capacity", "participants"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "example": 1
+        },
+        "title": {
+          "type": "string",
+          "example": "Quizaften"
+        },
+        "date": {
+          "type": "string",
+          "example": "2026-11-13"
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "example": 3
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "example": ["Anna", "Bo"]
+        }
+      }
+    },
+    "NewEvent": {
+      "type": "object",
+      "required": ["title", "date", "capacity"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "example": "Musikquiz"
+        },
+        "date": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Dato angives som YYYY-MM-DD",
+          "example": "2026-12-04"
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "example": 5
+        }
+      }
+    },
+    "Signup": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "example": "Emil"
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "string",
+          "example": "Eventet findes ikke."
+        }
+      }
+    }
+  }
+}
